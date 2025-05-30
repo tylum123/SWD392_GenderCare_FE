@@ -10,6 +10,8 @@ import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ReproductiveHealth from "./pages/reproductive_health/reproductive_health";
+import CycleTracking from "./pages/cycle_tracking/cycle_tracking";
 
 function App() {
   // Đây là trạng thái đơn giản để kiểm tra xem người dùng đã đăng nhập hay chưa
@@ -29,6 +31,8 @@ function App() {
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
         <Route path="blog" element={<Blog />} />
+        <Route path="/services/reproductive-health" element={<ReproductiveHealth />} />
+        <Route path="/services/cycle-tracking" element={<CycleTracking/>} />
       </Route>
 
       {/* Các trang yêu cầu đăng nhập */}
@@ -43,6 +47,8 @@ function App() {
         <Route path="profile" element={<div>Profile Page</div>} />
         <Route path="appointments" element={<div>Appointments Page</div>} />
         <Route path="medical-records" element={<div>Medical Records</div>} />
+        
+        
       </Route>
 
       {/* Redirect không hợp lệ URLs về trang chính */}

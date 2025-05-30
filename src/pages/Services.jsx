@@ -300,7 +300,7 @@ function Services() {
                 </li>
               </ul>
               <Link
-                to="/cycle-tracker"
+                to="cycle-tracking"
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-indigo-900 bg-white hover:bg-indigo-50 transition-colors self-start"
               >
                 Try Cycle Tracker
