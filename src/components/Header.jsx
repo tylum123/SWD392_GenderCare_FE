@@ -1,10 +1,20 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.svg";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const { currentUser, logout, isAuthenticated, isStaffOrHigher } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+    setIsProfileMenuOpen(false);
+  };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -16,79 +26,168 @@ function Header() {
 
           {/* Desktop menu */}
           <nav className="hidden md:block">
-            <ul className="flex space-x-8">
-              <li>
-                <NavLink
-                  to="/"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                  }
-                >
-                  Home
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/services"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                  }
-                >
-                  Services
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/about"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                  }
-                >
-                  About
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/contact"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                  }
-                >
-                  Contact
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/Blog"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                  }
-                >
-                  Blogs
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/login"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "bg-blue-600 text-white px-4 py-2 rounded-md font-medium"
-                      : "bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200"
-                  }
-                >
-                  Login
-                </NavLink>
-              </li>
+            <ul className="flex space-x-8 items-center">
+              {/* Hiển thị menu Home cho người dùng thông thường */}
+              {!isStaffOrHigher() && (
+                <>
+                  <li>
+                    <NavLink
+                      to="/"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "text-blue-600 font-medium"
+                          : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                      }
+                    >
+                      Trang Chủ
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/services"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "text-blue-600 font-medium"
+                          : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                      }
+                    >
+                      Dịch Vụ
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/about"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "text-blue-600 font-medium"
+                          : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                      }
+                    >
+                      Giới Thiệu
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/contact"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "text-blue-600 font-medium"
+                          : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                      }
+                    >
+                      Liên Hệ
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/Blog"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "text-blue-600 font-medium"
+                          : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                      }
+                    >
+                      Bài Viết
+                    </NavLink>
+                  </li>
+                </>
+              )}
+
+              {/* Hiển thị liên kết Dashboard cho nhân viên */}
+              {isAuthenticated && isStaffOrHigher() && (
+                <li>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "text-blue-600 font-medium"
+                        : "text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                    }
+                  >
+                    Dashboard
+                  </NavLink>
+                </li>
+              )}
+
+              {/* User profile menu */}
+              {isAuthenticated ? (
+                <li className="relative">
+                  <button
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                    className="flex items-center space-x-1 text-gray-600 hover:text-blue-600"
+                  >
+                    <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white">
+                      {currentUser?.profilePicture ? (
+                        <img
+                          src={currentUser.profilePicture}
+                          alt={currentUser.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <User size={18} />
+                      )}
+                    </div>
+                    <span className="font-medium">
+                      {currentUser?.name?.split(" ")[0] || "Người Dùng"}
+                    </span>
+                  </button>
+
+                  {isProfileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                      {" "}
+                      {!isStaffOrHigher() && (
+                        <>
+                          <NavLink
+                            to="/profile"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsProfileMenuOpen(false)}
+                          >
+                            Hồ Sơ
+                          </NavLink>
+                          <NavLink
+                            to="/appointments"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsProfileMenuOpen(false)}
+                          >
+                            Lịch Hẹn
+                          </NavLink>
+                        </>
+                      )}
+                      {isStaffOrHigher() && (
+                        <NavLink
+                          to="/dashboard"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                        >
+                          Dashboard
+                        </NavLink>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      >
+                        <div className="flex items-center">
+                          <LogOut size={16} className="mr-2" />
+                          <span>Đăng Xuất</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ) : (
+                <li>
+                  <NavLink
+                    to="/login"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "bg-blue-600 text-white px-4 py-2 rounded-md font-medium"
+                        : "bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200"
+                    }
+                  >
+                    Đăng Nhập
+                  </NavLink>
+                </li>
+              )}
             </ul>
           </nav>
 
@@ -106,89 +205,160 @@ function Header() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <nav className="md:hidden pb-4">
-            <ul className="flex flex-col space-y-4">
-              <li>
-                <NavLink
-                  to="/"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium block"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200 block"
-                  }
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Home
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/services"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium block"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200 block"
-                  }
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Services
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/about"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium block"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200 block"
-                  }
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  About
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/contact"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium block"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200 block"
-                  }
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Contact
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/Blog"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-blue-600 font-medium block"
-                      : "text-gray-600 hover:text-blue-600 transition-colors duration-200 block"
-                  }
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Blogs
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/login"
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200 inline-block"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login
-                </NavLink>
-              </li>
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-white border-t">
+          <nav className="px-4 pt-2 pb-4">
+            <ul className="space-y-3">
+              {/* Menu cho người dùng thông thường trên mobile */}
+              {!isStaffOrHigher() && (
+                <>
+                  <li>
+                    <NavLink
+                      to="/"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "block text-blue-600 font-medium"
+                          : "block text-gray-600 hover:text-blue-600"
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Trang Chủ
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/services"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "block text-blue-600 font-medium"
+                          : "block text-gray-600 hover:text-blue-600"
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Dịch Vụ
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/about"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "block text-blue-600 font-medium"
+                          : "block text-gray-600 hover:text-blue-600"
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Giới Thiệu
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/contact"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "block text-blue-600 font-medium"
+                          : "block text-gray-600 hover:text-blue-600"
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Liên Hệ
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/Blog"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "block text-blue-600 font-medium"
+                          : "block text-gray-600 hover:text-blue-600"
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Bài Viết
+                    </NavLink>
+                  </li>
+                </>
+              )}
+
+              {/* Menu Dashboard cho nhân viên trên mobile */}
+              {isAuthenticated && isStaffOrHigher() && (
+                <li>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "block text-blue-600 font-medium"
+                        : "block text-gray-600 hover:text-blue-600"
+                    }
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dashboard
+                  </NavLink>
+                </li>
+              )}
+
+              {/* User authentication menu trên mobile */}
+              {isAuthenticated ? (
+                <>
+                  {!isStaffOrHigher() && (
+                    <>
+                      {" "}
+                      <li>
+                        <NavLink
+                          to="/profile"
+                          className={({ isActive }) =>
+                            isActive
+                              ? "block text-blue-600 font-medium"
+                              : "block text-gray-600 hover:text-blue-600"
+                          }
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Hồ Sơ
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink
+                          to="/appointments"
+                          className={({ isActive }) =>
+                            isActive
+                              ? "block text-blue-600 font-medium"
+                              : "block text-gray-600 hover:text-blue-600"
+                          }
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Lịch Hẹn
+                        </NavLink>
+                      </li>
+                    </>
+                  )}
+                  <li>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center text-red-600 hover:text-red-700"
+                    >
+                      <LogOut size={16} className="mr-2" />
+                      <span>Đăng Xuất</span>
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <li>
+                  <NavLink
+                    to="/login"
+                    className="block bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Đăng Nhập
+                  </NavLink>
+                </li>
+              )}
             </ul>
           </nav>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }
