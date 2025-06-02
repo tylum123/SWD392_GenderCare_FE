@@ -4,14 +4,14 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 
-// Dữ liệu blog nên chuyển thành file riêng
-import { blogPosts } from "../data/blogData";
+// Blog data should be moved to a separate file
+import { blogData } from "../data/blogData";
 
 const categories = [
   { id: "all", name: "Tất cả bài viết" },
   { id: "reproductive", name: "Sức khỏe sinh sản" },
   { id: "sexual", name: "Sức khỏe tình dục" },
-  { id: "mental", name: "Sức khỏe tinh thần" },
+  { id: "mental", name: "Sức khỏe tâm thần" },
   { id: "education", name: "Giáo dục giới tính" },
 ];
 
@@ -19,9 +19,9 @@ function Blog() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
 
-  // Lọc bài viết theo category và search term
-  const filteredBlogs = blogPosts
-    .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sắp xếp theo ngày mới nhất
+  // Filter blog posts by category and search term
+  const filteredBlogs = blogData
+    .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by newest date
     .map((blog) => ({
       ...blog,
       categoryName: categories.find((cat) => cat.id === blog.category)?.name,
@@ -47,7 +47,7 @@ function Blog() {
               transition={{ duration: 0.5 }}
               className="text-4xl font-extrabold tracking-tight sm:text-5xl"
             >
-              Trang tin sức khỏe giới tính
+              Tin Tức Sức Khỏe Giới Tính
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -55,8 +55,8 @@ function Blog() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="mt-4 text-lg"
             >
-              Khám phá kiến thức, tin tức và hướng dẫn về sức khỏe sinh sản,
-              tình dục và giới tính từ các chuyên gia
+              Khám phá kiến thức, tin tức, và hướng dẫn về sức khỏe sinh sản, 
+              sức khỏe tình dục, và các vấn đề giới tính từ các chuyên gia
             </motion.p>
 
             {/* Search box */}
@@ -120,7 +120,7 @@ function Blog() {
                   </div>
                   <div className="p-8 md:w-1/2 flex flex-col justify-center">
                     <div className="uppercase tracking-wide text-sm text-indigo-600 font-semibold">
-                      Bài viết nổi bật
+                      Bài Viết Nổi Bật
                     </div>
                     <h2 className="mt-2 text-2xl font-bold text-gray-900 hover:text-indigo-600 transition-colors">
                       {filteredBlogs[0].title}
@@ -136,12 +136,12 @@ function Blog() {
                             filteredBlogs[0].authorImg ||
                             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
                           }
-                          alt={filteredBlogs[0].author || "Author"}
+                          alt={filteredBlogs[0].author || "Tác giả"}
                         />
                       </div>
                       <div className="ml-3">
                         <p className="text-sm font-medium text-gray-900">
-                          {filteredBlogs[0].author || "Gender Healthcare Team"}
+                          {filteredBlogs[0].author || "Đội Chăm Sóc Sức Khỏe Giới Tính"}
                         </p>
                         <p className="text-sm text-gray-500">
                           {new Date(filteredBlogs[0].date).toLocaleDateString(
@@ -223,10 +223,10 @@ function Blog() {
                             blog.authorImg ||
                             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
                           }
-                          alt={blog.author || "Author"}
+                          alt={blog.author || "Tác giả"}
                         />
                         <span className="text-sm font-medium text-gray-900">
-                          {blog.author || "Gender Healthcare Team"}
+                          {blog.author || "Đội Chăm Sóc Sức Khỏe Giới Tính"}
                         </span>
                       </div>
                     </div>
@@ -243,8 +243,8 @@ function Blog() {
             <div className="md:w-1/2 bg-indigo-700 p-8 text-white flex flex-col justify-center">
               <h3 className="text-2xl font-bold mb-4">Đăng ký nhận bản tin</h3>
               <p className="mb-6">
-                Nhận các thông tin mới nhất về sức khỏe giới tính qua email.
-                Chúng tôi sẽ không gửi spam hay chia sẻ thông tin của bạn.
+                Nhận thông tin mới nhất về sức khỏe giới tính qua email.
+                Chúng tôi sẽ không gửi thư rác hoặc chia sẻ thông tin của bạn.
               </p>
               <div className="flex flex-col sm:flex-row">
                 <input
@@ -260,7 +260,7 @@ function Blog() {
             <div className="md:w-1/2">
               <img
                 src="https://images.unsplash.com/photo-1573164713988-8665fc963095?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
-                alt="Newsletter"
+                alt="Bản tin"
                 className="w-full h-64 md:h-full object-cover"
               />
             </div>
