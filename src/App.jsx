@@ -10,6 +10,7 @@ import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import STITestingPage from "./STI-Testing/STITesting";
 
 function App() {
   // Đây là trạng thái đơn giản để kiểm tra xem người dùng đã đăng nhập hay chưa
@@ -29,6 +30,7 @@ function App() {
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
         <Route path="blog" element={<Blog />} />
+        <Route path="services/sti-testing" element={<STITestingPage />} />
       </Route>
 
       {/* Các trang yêu cầu đăng nhập */}
