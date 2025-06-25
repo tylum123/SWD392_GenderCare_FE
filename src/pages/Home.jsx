@@ -5,13 +5,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Import data từ các file riêng biệt
-import {
-  services,
-  consultants,
-  testimonials,
-  blogPosts,
-  bannerSlides,
-} from "../data";
+import { services, testimonials, blogData, bannerSlides } from "../data";
+import { consultants } from "../data/consultants";
 
 function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -64,7 +59,7 @@ function Home() {
         <button
           onClick={prevSlide}
           className="absolute left-4 top-1/2 z-10 bg-white/30 p-2 rounded-full hover:bg-white/50 transition-all"
-          aria-label="Previous slide"
+          aria-label="Slide trước"
         >
           <ChevronLeft size={24} />
         </button>
@@ -72,7 +67,7 @@ function Home() {
         <button
           onClick={nextSlide}
           className="absolute right-4 top-1/2 z-10 bg-white/30 p-2 rounded-full hover:bg-white/50 transition-all"
-          aria-label="Next slide"
+          aria-label="Slide tiếp theo"
         >
           <ChevronRight size={24} />
         </button>
@@ -89,36 +84,9 @@ function Home() {
               className={`w-3 h-3 rounded-full ${
                 index === currentSlide ? "bg-white scale-125" : "bg-white/50"
               } transition-all duration-300`}
-              aria-label={`Go to slide ${index + 1}`}
+              aria-label={`Chuyển đến slide ${index + 1}`}
             />
           ))}
-        </div>
-
-        {/* Search bar overlay */}
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-xl px-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search for services or health topics..."
-              className="w-full py-3 px-4 pr-12 rounded-lg border-0 shadow-lg focus:ring-2 focus:ring-purple-400 text-gray-700 bg-white/90 backdrop-blur-sm"
-            />
-            <button className="absolute right-2 top-2 bg-purple-600 text-white p-1.5 rounded-md hover:bg-purple-700 transition-colors">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
 
         {/* Slides */}
@@ -215,19 +183,19 @@ function Home() {
               transition={{ duration: 0.5 }}
             >
               <span className="bg-indigo-100 text-indigo-800 text-sm font-medium px-4 py-1.5 rounded-full inline-block mb-3">
-                Healthcare Services
+                Dịch Vụ Y Tế
               </span>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Our Specialized Services
+                Dịch Vụ Chuyên Biệt Của Chúng Tôi
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Comprehensive healthcare tailored to your reproductive health
-                and sexual wellbeing needs
+                Chăm sóc sức khỏe toàn diện được điều chỉnh phù hợp với nhu cầu
+                sức khỏe sinh sản và tình dục của bạn
               </p>
             </motion.div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
               <motion.div
                 key={service.id}
@@ -253,7 +221,7 @@ function Home() {
                     to={service.link}
                     className="group inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors"
                   >
-                    Learn More
+                    Tìm Hiểu Thêm
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-5 w-5 ml-1 transform group-hover:translate-x-1 transition-transform"
@@ -270,7 +238,7 @@ function Home() {
                     </svg>
                   </Link>
                   <div className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-1 rounded-full">
-                    {service.category || "Health"}
+                    {service.category || "Sức Khỏe"}
                   </div>
                 </div>
               </motion.div>
@@ -288,7 +256,7 @@ function Home() {
               to="/services"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-xl"
             >
-              View All Services
+              Xem Tất Cả Dịch Vụ
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 ml-2"
@@ -311,61 +279,65 @@ function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Meet Our Consultants
+              Gặp Gỡ Đội Ngũ Tư Vấn
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Experienced healthcare professionals dedicated to providing
-              quality care
+              Các chuyên gia y tế giàu kinh nghiệm cam kết cung cấp dịch vụ chăm
+              sóc chất lượng
             </p>
-          </div>
-
+          </div>{" "}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {consultants.map((consultant) => (
+            {consultants.slice(0, 4).map((appointment, index) => (
               <motion.div
-                key={consultant.id}
+                key={`${appointment.consultantId}-${index}`}
                 className="bg-white rounded-xl shadow-md overflow-hidden"
                 whileHover={{ y: -8 }}
                 transition={{ duration: 0.3 }}
               >
                 <img
-                  src={consultant.image}
-                  alt={consultant.name}
+                  src={
+                    appointment.consultant.avatarUrl ||
+                    "https://via.placeholder.com/300x200?text=Consultant"
+                  }
+                  alt={appointment.consultant.name}
                   className="w-full h-56 object-cover"
                 />
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                    {consultant.name}
+                    {appointment.consultant.name}
                   </h3>
                   <p className="text-indigo-600 font-medium mb-2">
-                    {consultant.specialty}
+                    {appointment.consultant.role === "Consultant"
+                      ? "Chuyên viên tư vấn"
+                      : appointment.consultant.role}
                   </p>
                   <div className="flex items-center mb-3">
                     <div className="text-yellow-400 mr-1">
-                      {"★".repeat(Math.floor(consultant.rating))}
-                      {"☆".repeat(5 - Math.floor(consultant.rating))}
+                      {"★".repeat(4)}
+                      {"☆".repeat(1)}
                     </div>
-                    <span className="text-gray-500 text-sm">
-                      ({consultant.reviewCount} reviews)
-                    </span>
+                    <span className="text-gray-500 text-sm">(16 đánh giá)</span>
                   </div>
-                  <p className="text-gray-600 text-sm mb-4">{consultant.bio}</p>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-4 h-20 overflow-hidden">
+                    Chuyên gia tư vấn với nhiều năm kinh nghiệm trong lĩnh vực
+                    chăm sóc sức khỏe sinh sản và giới tính.
+                  </p>
                   <Link
-                    to={`/consultants/${consultant.id}`}
+                    to={`/consultants/${appointment.consultantId}`}
                     className="inline-block w-full text-center py-2 border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-600 hover:text-white transition duration-300"
                   >
-                    View Profile
+                    Xem Hồ Sơ
                   </Link>
                 </div>
               </motion.div>
             ))}
           </div>
-
           <div className="text-center mt-12">
             <Link
               to="/consultants"
               className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-300"
             >
-              View All Consultants
+              Xem Tất Cả Tư Vấn Viên
             </Link>
           </div>
         </div>
@@ -376,11 +348,11 @@ function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Key Features
+              Tính Năng Nổi Bật
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Innovative tools to support your reproductive and sexual health
-              journey
+              Các công cụ sáng tạo hỗ trợ hành trình sức khỏe sinh sản và tình
+              dục của bạn
             </p>
           </div>
 
@@ -408,18 +380,19 @@ function Home() {
               </div>
 
               <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-                Cycle Tracking
+                Theo Dõi Chu Kỳ
               </h3>
               <p className="text-gray-600 mb-6">
-                Monitor your menstrual cycle, receive predictions for ovulation
-                periods, fertility windows, and set reminders for birth control.
-                Our smart algorithms adapt to your unique patterns.
+                Theo dõi chu kỳ kinh nguyệt, nhận dự đoán về thời kỳ rụng trứng,
+                cửa sổ sinh sản và thiết lập nhắc nhở về biện pháp tránh thai.
+                Thuật toán thông minh của chúng tôi thích ứng với chu kỳ độc đáo
+                của bạn.
               </p>
               <Link
-                to="/cycle-tracker"
+                to="/services/tracking"
                 className="inline-flex items-center text-purple-700 font-medium hover:text-purple-900"
               >
-                Try the tracker
+                Công cụ theo dõi
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 ml-1"
@@ -459,19 +432,19 @@ function Home() {
                 </svg>
               </div>
 
-              <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-                Online Consultations
+              <h3 className="text-2xl font-semibold text-gray-900 mb-3 ">
+                Tư Vấn Trực Tuyến
               </h3>
               <p className="text-gray-600 mb-6">
-                Schedule private video consultations with our healthcare experts
-                for personalized advice on reproductive health, sexual
-                education, and any concerns you may have.
+                Lên lịch tư vấn video riêng tư với các chuyên gia y tế của chúng
+                tôi để được tư vấn cá nhân hóa về sức khỏe sinh sản, giáo dục
+                giới tính, và bất kỳ mối quan tâm nào bạn có thể có.
               </p>
               <Link
-                to="/consultations"
+                to="/services/booking"
                 className="inline-flex items-center text-blue-700 font-medium hover:text-blue-900"
               >
-                Book a consultation
+                Đặt lịch tư vấn
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 ml-1"
@@ -512,18 +485,18 @@ function Home() {
               </div>
 
               <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-                STI Testing Services
+                Dịch Vụ Xét Nghiệm STI
               </h3>
               <p className="text-gray-600 mb-6">
-                Order confidential STI tests, book appointments at nearby
-                clinics, and receive your results securely through our platform,
-                with follow-up care options if needed.
+                Đặt các xét nghiệm STI bảo mật, đặt lịch hẹn tại các phòng khám
+                gần đó, và nhận kết quả của bạn một cách an toàn thông qua nền
+                tảng của chúng tôi, với các tùy chọn chăm sóc tiếp theo nếu cần.
               </p>
               <Link
                 to="/services/sti-testing"
                 className="inline-flex items-center text-pink-700 font-medium hover:text-pink-900"
               >
-                Learn about testing
+                Tìm hiểu về xét nghiệm
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 ml-1"
@@ -548,9 +521,12 @@ function Home() {
       <section className="py-16 bg-gradient-to-br from-indigo-900 to-blue-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">What Our Clients Say</h2>
+            <h2 className="text-3xl font-bold mb-4">
+              Khách Hàng Nói Gì Về Chúng Tôi
+            </h2>
             <p className="text-xl opacity-90 max-w-3xl mx-auto">
-              Read about the experiences of those who have used our services
+              Đọc về trải nghiệm của những người đã sử dụng dịch vụ của chúng
+              tôi
             </p>
           </div>
 
@@ -589,70 +565,68 @@ function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Latest from Our Blog
+              Bài Viết Mới Nhất
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Educational articles on reproductive health and sexual wellbeing
-              topics that matter to you
+              Các bài viết giáo dục về sức khỏe sinh sản và tình dục với các chủ
+              đề quan trọng đối với bạn
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {blogPosts.map((post) => (
-              <motion.div
-                key={post.id}
-                className="bg-white rounded-xl shadow-md overflow-hidden"
-                whileHover={{ y: -8 }}
-              >
-                <div className="h-48 overflow-hidden">
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover transform hover:scale-105 transition duration-500"
-                  />
-                </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-3 text-sm text-gray-500">
-                    <span>{post.date}</span>
-                    <span>By {post.author}</span>
+            {blogData
+              .sort((a, b) => new Date(b.date) - new Date(a.date)) //sort for newsest
+              .slice(0, 3)
+              .map((post) => (
+                <motion.div
+                  key={post.id}
+                  className="bg-white rounded-xl shadow-md overflow-hidden"
+                  whileHover={{ y: -8 }}
+                >
+                  <div className="h-48 overflow-hidden">
+                    <img
+                      src={post.img}
+                      alt={post.title}
+                      className="w-full h-full object-cover transform hover:scale-105 transition duration-500"
+                    />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    {post.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{post.excerpt}</p>
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {post.categories.map((category, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-md"
-                      >
-                        {category}
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-3 text-sm text-gray-500">
+                      <span>{post.date}</span>
+                      <span>Bởi {post.author}</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      {post.title}
+                    </h3>
+                    <p className="text-gray-600 mb-4">{post.excerpt}</p>
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-md">
+                        {post.categoryName}
                       </span>
-                    ))}
-                  </div>
-                  <Link
-                    to={`/blog/${post.id}`}
-                    className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800"
-                  >
-                    Read More
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 ml-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                    </div>
+                    <Link
+                      to={`/blog/${post.id}`}
+                      className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M14 5l7 7m0 0l-7 7m7-7H3"
-                      />
-                    </svg>
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
+                      Đọc Thêm
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 ml-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
+                      </svg>
+                    </Link>
+                  </div>
+                </motion.div>
+              ))}
           </div>
 
           <div className="text-center mt-12">
@@ -660,7 +634,7 @@ function Home() {
               to="/blog"
               className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-300"
             >
-              Visit Our Blog
+              Ghé Thăm Blog
             </Link>
           </div>
         </div>
@@ -670,19 +644,19 @@ function Home() {
       <section className="py-20 px-4 bg-white">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-6">
-            Take Control of Your Reproductive Health Today
+            Kiểm Soát Sức Khỏe Sinh Sản Của Bạn Ngay Hôm Nay
           </h2>
           <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto">
-            Start tracking your cycle, book a consultation with our healthcare
-            professionals, or schedule an STI test for comprehensive
-            reproductive healthcare.
+            Bắt đầu theo dõi chu kỳ của bạn, đặt lịch tư vấn với các chuyên gia
+            y tế, hoặc lên lịch xét nghiệm STI để chăm sóc sức khỏe sinh sản
+            toàn diện.
           </p>
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <Link
-              to="/appointment"
+              to="/services/booking"
               className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-lg shadow-md transition duration-300"
             >
-              Book Appointment
+              Đặt Lịch Hẹn
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 ml-2"
@@ -697,10 +671,10 @@ function Home() {
               </svg>
             </Link>
             <Link
-              to="/cycle-tracker"
+              to="/services/tracking"
               className="inline-flex items-center bg-white border-2 border-indigo-600 text-indigo-600 font-medium px-6 py-3 rounded-lg hover:bg-indigo-50 transition duration-300"
             >
-              Try Cycle Tracker
+              Công Cụ Theo Dõi
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 ml-2"

@@ -1,7 +1,8 @@
 import axios from "axios";
 import config from "./config";
+import toastService from "./toastService";
 
-// Create axios instance with default config
+// Tạo instance axios với cấu hình mặc định
 const apiClient = axios.create({
   baseURL: config.api.baseURL,
   headers: {
@@ -10,11 +11,11 @@ const apiClient = axios.create({
   timeout: config.api.timeout,
 });
 
-// Request interceptor
+// Bộ chặn yêu cầu
 apiClient.interceptors.request.use(
   (reqConfig) => {
-    // You can modify the request config here
-    // For example, adding authentication token
+    // Bạn có thể sửa đổi cấu hình yêu cầu tại đây
+    // Ví dụ, thêm token xác thực
 
     const token = localStorage.getItem(config.auth.storageKey);
     if (token) {
@@ -24,57 +25,294 @@ apiClient.interceptors.request.use(
     return reqConfig;
   },
   (error) => {
+    toastService.error(
+      "Yêu cầu không thể gửi đi. Vui lòng kiểm tra kết nối của bạn."
+    );
     return Promise.reject(error);
   }
 );
 
-// Response interceptor
+// Bộ chặn phản hồi
 apiClient.interceptors.response.use(
   (response) => {
-    // Any status code that lies within the range of 2xx
+    // Bất kỳ mã trạng thái nào nằm trong phạm vi 2xx
+    // Bạn có thể hiển thị thông báo thành công tại đây nếu API trả về thông báo thành công cụ thể
+
+    // if (response.data?.message) {
+    //   toastService.success(response.data.message);
+    // }
+
     return response;
   },
-  (error) => {
-    // Any status codes that falls outside the range of 2xx
+  async (error) => {
+    // Bất kỳ mã trạng thái nào nằm ngoài phạm vi 2xx
+    let errorMessage = "Đã xảy ra lỗi không mong muốn";
 
-    // Handle common errors
+    // Xử lý các lỗi phổ biến
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
+      // Yêu cầu đã được thực hiện và máy chủ đã phản hồi với mã trạng thái
+      // nằm ngoài phạm vi 2xx
 
-      // Handle 401 Unauthorized
+      // Lấy thông báo lỗi từ phản hồi nếu có
+      errorMessage = error.response.data?.message || errorMessage;
+
+      // Xử lý lỗi 401 Không được phép
       if (error.response.status === 401) {
-        // Redirect to login or refresh token
-        console.error("Unauthorized access, please login again");
+        console.log(
+          "401 Không được phép - Token có thể không hợp lệ hoặc đã hết hạn"
+        );
 
-        // Example: Redirect to login
-        // window.location.href = '/login';
+        // Thử làm mới token nếu chúng ta có
+        const refreshToken = localStorage.getItem(
+          config.auth.refreshStorageKey
+        );
+        if (refreshToken) {
+          try {
+            // Triển khai logic làm mới token tại đây
+            const refreshResponse = await axios.post(
+              `${config.api.baseURL}${config.api.auth.refreshToken}`,
+              {
+                refreshToken,
+              }
+            );
+
+            if (refreshResponse.data && refreshResponse.data.token) {
+              // Cập nhật token
+              localStorage.setItem(
+                config.auth.storageKey,
+                refreshResponse.data.token
+              );
+              localStorage.setItem(
+                config.auth.refreshStorageKey,
+                refreshResponse.data.refreshToken
+              );
+
+              // Thử lại yêu cầu ban đầu
+              const originalRequest = error.config;
+              originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
+              return apiClient(originalRequest);
+            }
+          } catch (refreshError) {
+            console.log("Làm mới token thất bại, xóa trạng thái xác thực");
+            // Nếu làm mới token thất bại, dọn dẹp và chuyển hướng đến đăng nhập
+            localStorage.removeItem(config.auth.storageKey);
+            localStorage.removeItem(config.auth.refreshStorageKey);
+            localStorage.removeItem("user");
+            localStorage.removeItem("token_expiration");
+
+            toastService.error(
+              "Phiên của bạn đã hết hạn. Vui lòng đăng nhập lại."
+            );
+
+            // Chỉ chuyển hướng nếu chưa ở trang đăng nhập
+            if (!window.location.pathname.includes("/login")) {
+              window.location.href = "/login";
+            }
+            return Promise.reject(refreshError);
+          }
+        } else {
+          // Không có refresh token - dọn dẹp trạng thái xác thực
+          console.log("Không có refresh token, xóa trạng thái xác thực");
+          localStorage.removeItem(config.auth.storageKey);
+          localStorage.removeItem("user");
+          localStorage.removeItem("token_expiration");
+
+          toastService.error(errorMessage || "Vui lòng đăng nhập lại.");
+
+          // Chỉ chuyển hướng nếu chưa ở trang đăng nhập
+          if (!window.location.pathname.includes("/login")) {
+            window.location.href = "/login";
+          }
+        }
       }
 
-      // Handle 403 Forbidden
+      // Xử lý lỗi 403 Cấm truy cập
       if (error.response.status === 403) {
-        console.error("Access forbidden");
-      }
-
-      // Handle 404 Not Found
+        toastService.error("Bạn không có quyền truy cập tài nguyên này");
+      } // Xử lý lỗi 404 Không tìm thấy
       if (error.response.status === 404) {
-        console.error("Resource not found");
+        toastService.error(errorMessage);
+        // Bạn cũng có thể điều hướng đến trang 404 cho các tài nguyên quan trọng
+        // if (error.config.url.includes('critical-endpoint')) {
+        //   window.location.href = '/not-found';
+        // }
       }
 
-      // Handle 500 Internal Server Error
+      // Xử lý lỗi 422 Lỗi xác thực
+      if (error.response.status === 422) {
+        // Xử lý lỗi xác thực
+        if (error.response.data?.errors) {
+          const validationErrors = error.response.data.errors;
+          // Trích xuất thông báo lỗi xác thực đầu tiên để hiển thị
+          const firstErrorKey = Object.keys(validationErrors)[0];
+          if (firstErrorKey) {
+            errorMessage =
+              validationErrors[firstErrorKey][0] || "Xác thực thất bại";
+          }
+        }
+        toastService.warning(errorMessage);
+        return Promise.reject(error);
+      }
+
+      // Xử lý lỗi 500 Lỗi máy chủ nội bộ
       if (error.response.status >= 500) {
-        console.error("Server error occurred");
+        // In ra thông báo phản hồi nếu có
+        console.log("Alo:" + error.response.data);
+        if (error.response.data) {
+          toastService.error(error.response.data);
+        } else {
+          toastService.error("Đã xảy ra lỗi máy chủ. Vui lòng thử lại sau.");
+        }
       }
     } else if (error.request) {
-      // The request was made but no response was received
-      console.error("No response received from server");
+      // Yêu cầu đã được gửi nhưng không nhận được phản hồi
+      console.log("Lỗi mạng - không nhận được phản hồi từ máy chủ");
+
+      if (error.code === "ECONNABORTED") {
+        errorMessage = "Yêu cầu đã hết thời gian. Vui lòng thử lại sau.";
+      } else if (error.message && error.message.includes("Network Error")) {
+        errorMessage =
+          "Lỗi mạng. Vui lòng kiểm tra kết nối internet và trạng thái máy chủ của bạn.";
+
+        // Không hiển thị thông báo lỗi cho lỗi mạng trong quá trình xác minh token
+        // vì điều này có thể do máy chủ tạm thời ngừng hoạt động
+        if (!error.config?.url?.includes("/profile")) {
+          toastService.error(errorMessage);
+        }
+
+        // Nếu đây là lỗi mạng và chúng ta có dữ liệu xác thực đã lưu,
+        // đừng xóa nó ngay lập tức vì máy chủ có thể tạm thời ngừng hoạt động
+        console.log(
+          "Máy chủ dường như đã ngừng hoạt động, tạm thời duy trì trạng thái xác thực"
+        );
+
+        return Promise.reject(error);
+      } else {
+        errorMessage =
+          "Không nhận được phản hồi từ máy chủ. Vui lòng kiểm tra kết nối của bạn.";
+      }
+
+      // Chỉ hiển thị thông báo nếu không phải là yêu cầu xác minh token
+      if (!error.config?.url?.includes("/profile")) {
+        toastService.error(errorMessage);
+      }
     } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error("Error setting up request:", error.message);
+      // Đã xảy ra sự cố trong quá trình thiết lập yêu cầu gây ra Lỗi
+      errorMessage = `Lỗi: ${error.message}`;
+      toastService.error(errorMessage);
+    }
+
+    // Hiển thị thông báo lỗi cho bất kỳ lỗi nào chưa được xử lý
+    if (
+      !error.response ||
+      ![401, 403, 404, 422, 500].includes(error.response.status)
+    ) {
+      toastService.error(errorMessage);
     }
 
     return Promise.reject(error);
   }
 );
 
+// Các phương thức API hỗ trợ cho các thao tác thông dụng
+const apiService = {
+  /**
+   * Thực hiện yêu cầu GET
+   * @param {string} url - URL để gửi yêu cầu đến
+   * @param {Object} params - Các tham số truy vấn
+   * @param {Object} config - Cấu hình axios bổ sung
+   * @returns {Promise} - Promise phản hồi
+   */
+  get: (url, params = {}, config = {}) => {
+    return apiClient.get(url, { params, ...config });
+  },
+
+  /**
+   * Thực hiện yêu cầu POST
+   * @param {string} url - URL để gửi yêu cầu đến
+   * @param {Object} data - Dữ liệu để gửi
+   * @param {Object} config - Cấu hình axios bổ sung
+   * @returns {Promise} - Promise phản hồi
+   */
+  post: (url, data = {}, config = {}) => {
+    return apiClient.post(url, data, config);
+  },
+
+  /**
+   * Thực hiện yêu cầu PUT
+   * @param {string} url - URL để gửi yêu cầu đến
+   * @param {Object} data - Dữ liệu để gửi
+   * @param {Object} config - Cấu hình axios bổ sung
+   * @returns {Promise} - Promise phản hồi
+   */
+  put: (url, data = {}, config = {}) => {
+    return apiClient.put(url, data, config);
+  },
+
+  /**
+   * Thực hiện yêu cầu PATCH
+   * @param {string} url - URL để gửi yêu cầu đến
+   * @param {Object} data - Dữ liệu để gửi
+   * @param {Object} config - Cấu hình axios bổ sung
+   * @returns {Promise} - Promise phản hồi
+   */
+  patch: (url, data = {}, config = {}) => {
+    return apiClient.patch(url, data, config);
+  },
+
+  /**
+   * Thực hiện yêu cầu DELETE
+   * @param {string} url - URL để gửi yêu cầu đến
+   * @param {Object} config - Cấu hình axios bổ sung
+   * @returns {Promise} - Promise phản hồi
+   */
+  delete: (url, config = {}) => {
+    return apiClient.delete(url, config);
+  },
+  /**
+   * Tải lên tệp với theo dõi tiến trình
+   * @param {string} url - URL để gửi yêu cầu đến
+   * @param {FormData} formData - Form data chứa tệp để tải lên
+   * @param {Function} onProgress - Hàm gọi lại tiến trình
+   * @returns {Promise} - Promise phản hồi
+   */
+  upload: (url, formData, onProgress = null) => {
+    return apiClient.post(url, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      onUploadProgress: onProgress
+        ? (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onProgress(percentCompleted);
+          }
+        : undefined,
+    });
+  },
+  /**
+   * Tải xuống tệp với theo dõi tiến trình
+   * @param {string} url - URL để gửi yêu cầu đến
+   * @param {Function} onProgress - Hàm gọi lại tiến trình
+   * @param {Object} params - Các tham số truy vấn
+   * @returns {Promise} - Promise phản hồi
+   */
+  download: (url, onProgress = null, params = {}) => {
+    return apiClient.get(url, {
+      params,
+      responseType: "blob",
+      onDownloadProgress: onProgress
+        ? (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onProgress(percentCompleted);
+          }
+        : undefined,
+    });
+  },
+};
+
+export { apiClient, apiService };
 export default apiClient;
