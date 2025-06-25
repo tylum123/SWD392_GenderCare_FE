@@ -1,25 +1,20 @@
 import React from "react";
 import CalendarView from "./CalendarView";
 import OvulationPredictor from "./OvulationPrediction";
-import CycleHistory from "./CycleHistory";
-import SymptomsTracker from "./SymptomsTracker";
 import Settings from "./Settings";
+import LogCycleForm from "./LogCycleForm";
 
 const TabContent = ({ activeTab }) => {
   const renderTabContent = () => {
     switch (activeTab) {
       case "calendar":
         return <CalendarView />;
-      case "prediction":
-        return <OvulationPredictor />;
-      case "history":
-        return <CycleHistory />;
-      case "symptoms":
-        return <SymptomsTracker />;
-      case "settings":
-        return <Settings />;
+      // case "prediction":
+      //   return <OvulationPredictor />;
+      case "logCycle":
+        return <LogCycleForm />;
       default:
-        return <CalendarView />;
+        return <LogCycleForm />;
     }
   };
 

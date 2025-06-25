@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import menstrualCycleService from "../../services/menstrualCycleService";
+import { Loader, AlertCircle, CheckCircle } from "lucide-react";
 
 const Settings = () => {
-  // Sample settings state
   const [settings, setSettings] = useState({
     cycleLength: 28,
     periodLength: 5,
@@ -18,6 +19,45 @@ const Settings = () => {
       dataSharing: false,
     },
   });
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  // Load user settings from API
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch insights to get average cycle length data
+        const insights = await menstrualCycleService.getInsights();
+
+        // Fetch notifications to get notification settings
+        const notifications = await menstrualCycleService.getNotifications();
+
+        // Combine the data into our settings format
+        if (insights && insights.length > 0) {
+          setSettings((prevSettings) => ({
+            ...prevSettings,
+            cycleLength: insights[0].averageCycleLength || 28,
+            periodLength: insights[0].averagePeriodLength || 5,
+            notifications: notifications && notifications.length > 0,
+            reminderTime: "08:00", // Default, might come from notification settings
+          }));
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load settings:", err);
+        setError("Không thể tải cài đặt. Vui lòng thử lại sau.");
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   // Handle settings changes
   const handleInputChange = (e) => {
@@ -40,25 +80,67 @@ const Settings = () => {
     }
   };
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
-    // Would save to backend in real app
-    alert("Settings saved successfully!");
+    try {
+      setSaving(true);
+      setError(null);
+
+      // Save notification preferences
+      await menstrualCycleService.setNotificationPreferences({
+        enabled: settings.notifications,
+        reminderTime: settings.reminderTime,
+        notifyBeforeDays: 1, // Default
+      });
+
+      // Show success message
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+
+      setSaving(false);
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      setError("Không thể lưu cài đặt. Vui lòng thử lại.");
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader className="animate-spin h-8 w-8 text-indigo-600" />
+        <span className="ml-2 text-gray-600">Đang tải cài đặt...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold text-gray-800">Tracker Settings</h2>
+      <h2 className="text-2xl font-bold text-gray-800">Cài Đặt Theo Dõi</h2>
+
+      {error && (
+        <div className="bg-red-50 p-4 rounded-lg flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 p-4 rounded-lg flex items-center">
+          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+          <p className="text-green-600">Lưu cài đặt thành công!</p>
+        </div>
+      )}
 
       <form onSubmit={handleSaveSettings}>
         {/* Cycle Settings */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Cycle Settings</h3>
+          <h3 className="text-lg font-semibold mb-4">Cài Đặt Chu Kỳ</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Average Cycle Length (days)
+                Độ Dài Chu Kỳ Trung Bình (ngày)
               </label>
               <input
                 type="number"
@@ -73,7 +155,7 @@ const Settings = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Average Period Length (days)
+                Độ Dài Kỳ Kinh Trung Bình (ngày)
               </label>
               <input
                 type="number"
@@ -90,7 +172,7 @@ const Settings = () => {
 
         {/* Notification Settings */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Notification Settings</h3>
+          <h3 className="text-lg font-semibold mb-4">Cài Đặt Thông Báo</h3>
 
           <div className="flex items-center mb-4">
             <input
@@ -105,14 +187,14 @@ const Settings = () => {
               htmlFor="notifications"
               className="ml-2 block text-sm text-gray-700"
             >
-              Enable notifications
+              Bật thông báo
             </label>
           </div>
 
           {settings.notifications && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reminder Time
+                Thời Gian Nhắc Nhở
               </label>
               <input
                 type="time"
@@ -127,7 +209,7 @@ const Settings = () => {
 
         {/* Tracking Preferences */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Tracking Preferences</h3>
+          <h3 className="text-lg font-semibold mb-4">Tùy Chọn Theo Dõi</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
             <div className="flex items-center">
@@ -143,7 +225,7 @@ const Settings = () => {
                 htmlFor="track-symptoms"
                 className="ml-2 block text-sm text-gray-700"
               >
-                Track symptoms
+                Theo dõi triệu chứng
               </label>
             </div>
 
@@ -160,7 +242,7 @@ const Settings = () => {
                 htmlFor="track-mood"
                 className="ml-2 block text-sm text-gray-700"
               >
-                Track mood
+                Theo dõi tâm trạng
               </label>
             </div>
 
@@ -177,7 +259,7 @@ const Settings = () => {
                 htmlFor="track-temperature"
                 className="ml-2 block text-sm text-gray-700"
               >
-                Track basal temperature
+                Theo dõi nhiệt độ cơ bản
               </label>
             </div>
 
@@ -194,7 +276,7 @@ const Settings = () => {
                 htmlFor="track-weight"
                 className="ml-2 block text-sm text-gray-700"
               >
-                Track weight
+                Theo dõi cân nặng
               </label>
             </div>
 
@@ -211,7 +293,7 @@ const Settings = () => {
                 htmlFor="track-notes"
                 className="ml-2 block text-sm text-gray-700"
               >
-                Track notes
+                Theo dõi ghi chú
               </label>
             </div>
           </div>
@@ -219,7 +301,7 @@ const Settings = () => {
 
         {/* Privacy Settings */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Privacy Settings</h3>
+          <h3 className="text-lg font-semibold mb-4">Cài Đặt Quyền Riêng Tư</h3>
 
           <div className="flex items-center">
             <input
@@ -234,13 +316,13 @@ const Settings = () => {
               htmlFor="data-sharing"
               className="ml-2 block text-sm text-gray-700"
             >
-              Allow anonymous data sharing for research purposes
+              Cho phép chia sẻ dữ liệu ẩn danh cho mục đích nghiên cứu
             </label>
           </div>
 
           <p className="mt-2 text-sm text-gray-500">
-            Your personal information will remain private. Only anonymized
-            statistical data would be shared.
+            Thông tin cá nhân của bạn sẽ được giữ kín. Chỉ dữ liệu thống kê ẩn
+            danh mới được chia sẻ.
           </p>
         </div>
 
@@ -248,9 +330,11 @@ const Settings = () => {
         <div className="flex justify-end">
           <button
             type="submit"
-            className="px-6 py-3 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors"
+            disabled={saving}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center"
           >
-            Save Settings
+            {saving && <Loader className="animate-spin h-4 w-4 mr-2" />}
+            {saving ? "Đang lưu..." : "Lưu Cài Đặt"}
           </button>
         </div>
       </form>

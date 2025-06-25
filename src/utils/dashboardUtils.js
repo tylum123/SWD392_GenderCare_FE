@@ -6,42 +6,65 @@
 export function getDashboardConfig(userRole) {
   const roleConfig = {
     consultant: {
-      title: "Bảng điều khiển dành cho bác sĩ tư vấn",
+      title: "Bảng điều khiển dành cho tư vấn viên",
       menuItems: [
-        { id: "overview", label: "Tổng quan", icon: "chart-pie" },
-        { id: "appointments", label: "Lịch hẹn", icon: "calendar" },
-        { id: "customers", label: "Khách hàng", icon: "users" },
+        {
+          id: "consultantAppointments",
+          label: "Lịch hẹn tư vấn",
+          icon: "calendar",
+        },
         { id: "messages", label: "Tin nhắn", icon: "chat" },
       ],
+      description: "Quản lý lịch tư vấn và xử lý xét nghiệm",
     },
     staff: {
       title: "Bảng điều khiển dành cho nhân viên",
       menuItems: [
-        { id: "overview", label: "Tổng quan", icon: "chart-pie" },
-        { id: "customers", label: "Khách hàng", icon: "users" },
-        { id: "records", label: "Hồ sơ y tế", icon: "document" },
-        { id: "inventory", label: "Kho vật tư", icon: "archive" },
+        {
+          id: "blogManagement",
+          label: "Quản lý bài viết",
+          icon: "document-text",
+        },
+        {
+          id: "stiTestingManagement",
+          label: "Quản lý xét nghiệm STI",
+          icon: "labs",
+        },
+        { id: "messages", label: "Tin nhắn", icon: "chat" },
       ],
+      description: "Tạo các bài đăng và quản lý thông tin khách hàng",
     },
     manager: {
       title: "Bảng điều khiển dành cho quản lý",
       menuItems: [
-        { id: "overview", label: "Tổng quan", icon: "chart-pie" },
-        { id: "staff", label: "Quản lý nhân viên", icon: "user-group" },
-        { id: "reports", label: "Báo cáo & Thống kê", icon: "chart-bar" },
-        { id: "services", label: "Quản lý dịch vụ", icon: "clipboard" },
-        { id: "finance", label: "Tài chính", icon: "cash" },
+        {
+          id: "servicesManagement",
+          label: "Quản lý dịch vụ",
+          icon: "clipboard",
+        },
+        {
+          id: "blogManagement",
+          label: "Phê duyệt bài viết",
+          icon: "document-check",
+        },
+        { id: "messages", label: "Tin nhắn", icon: "chat" },
       ],
+      description: "Thêm và quản lý các dịch vụ, phê duyệt nội dung",
     },
     admin: {
       title: "Bảng điều khiển quản trị viên",
       menuItems: [
         { id: "overview", label: "Tổng quan", icon: "chart-pie" },
-        { id: "users", label: "Quản lý người dùng", icon: "users" },
-        { id: "services", label: "Quản lý dịch vụ", icon: "clipboard" },
-        { id: "system", label: "Cài đặt hệ thống", icon: "cog" },
-        { id: "logs", label: "Nhật ký hệ thống", icon: "document-text" },
+        { id: "userManagement", label: "Quản lý người dùng", icon: "users" },
+        {
+          id: "blogManagement",
+          label: "Quản lý nội dung",
+          icon: "document-text",
+        },
+        { id: "reports", label: "Báo cáo & Thống kê", icon: "chart-bar" },
+        { id: "messages", label: "Tin nhắn", icon: "chat" },
       ],
+      description: "Thêm và quản lý người dùng, nội dung và cài đặt hệ thống",
     },
   };
 

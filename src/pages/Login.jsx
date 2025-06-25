@@ -8,28 +8,73 @@ import { useAuth } from "../contexts/AuthContext";
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  // Clear any existing auth state when login component mounts
+  React.useEffect(() => {
+    const clearExistingAuth = () => {
+      // Check if there's existing auth data that might be stale
+      const existingToken = localStorage.getItem("access_token");
+      const existingUser = localStorage.getItem("user");
+
+      if (existingToken || existingUser) {
+        console.log("Clearing existing auth state on login page");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("token_expiration");
+      }
+    };
+
+    clearExistingAuth();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
-      setError("Vui lòng nhập cả email và mật khẩu");
+      // Error will be shown via toast
       return;
     }
 
     setIsLoggingIn(true);
-    setError("");
 
     try {
-      const user = await authService.login(email, password);
-      login(user); // Sử dụng AuthContext để lưu thông tin người dùng và cập nhật trạng thái xác thực
-      navigate("/"); // Chuyển đến trang chủ sau khi đăng nhập thành công
-    } catch (err) {
-      setError(err.message || "Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập của bạn.");
+      // Clear any stale auth data before attempting login
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token_expiration");
+
+      // First login to get user data without redirect
+      const userData = await authService.login(email, password);
+
+      // Update auth context with user data
+      const loginSuccess = login(userData);
+      if (loginSuccess) {
+        // Get user role for redirect decision
+        const role = authService.getUserRole();
+        console.log("Login - Role extracted:", role);
+        console.log("Login - User data:", userData);
+
+        const redirectPath = authService.getRedirectPath(role);
+        console.log("Login - Redirect path:", redirectPath);
+
+        // For admin users, force redirect to dashboard
+        if (role && role.toLowerCase() === "admin") {
+          console.log("Admin detected, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        } else {
+          navigate(redirectPath, { replace: true });
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      // Ensure auth state is clean on login failure
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token_expiration");
+      // Error toast is handled by the axios interceptor
     } finally {
       setIsLoggingIn(false);
     }
@@ -76,7 +121,9 @@ function Login() {
             transition={{ delay: 0.3 }}
           >
             <h1 className="text-3xl font-bold mb-4">Chào Mừng Trở Lại</h1>
-            <p className="opacity-90">Đăng nhập vào tài khoản chăm sóc sức khỏe của bạn</p>
+            <p className="opacity-90">
+              Đăng nhập vào tài khoản chăm sóc sức khỏe của bạn
+            </p>
           </motion.div>
 
           <motion.div
@@ -166,15 +213,6 @@ function Login() {
           >
             Đăng Nhập
           </motion.h2>
-          {error && (
-            <motion.div
-              className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md text-red-700"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              {error}
-            </motion.div>
-          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -203,16 +241,19 @@ function Login() {
                 required
                 className="w-full p-3 border-b border-gray-300 focus:border-blue-500 focus:outline-none"
               />
-            </motion.div>
+            </motion.div>{" "}
             <motion.div
               className="flex justify-end"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <a href="#" className="text-sm text-blue-600 hover:underline">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-blue-600 hover:underline bg-transparent border-none cursor-pointer"
+              >
                 Quên Mật Khẩu?
-              </a>
+              </Link>
             </motion.div>{" "}
             <motion.button
               type="submit"
@@ -287,7 +328,7 @@ function Login() {
             <Link to="/" className="text-blue-600 hover:underline">
               Tiếp tục mà không cần đăng nhập
             </Link>
-          </motion.div>
+          </motion.div>{" "}
         </motion.div>
       </motion.div>
     </div>
