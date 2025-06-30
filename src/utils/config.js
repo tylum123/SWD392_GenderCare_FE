@@ -35,7 +35,7 @@ const config = {
   // API URLs
   api: {
     baseURL: getApiBaseURL(),
-    timeout: 20000, // 20 seconds
+    timeout: 30000, // 30 seconds
     // Auth endpoints - add API prefix
     auth: {
       login: "/api/v2.5/login",
@@ -69,8 +69,10 @@ const config = {
       create: "/api/v2.5/appointment/create",
       getById: (id) => `/api/v2.5/appointment/${id}`,
       update: (id) => `/api/v2.5/appointment/update/${id}`,
-      cancel: (id) => `/api/v2.5/appointment/${id}/cancel`,
+      cancel: (id) => `/api/v2.5/appointment/cancel/${id}`,
       getByUser: (userId) => `/api/v2.5/appointment/user/${userId}`,
+      updateMeetingLink: (id) =>
+        `/api/v2.5/appointment/update/meetinglink/${id}`,
       getByCurrentUser: "/api/v2.5/appointment/getall",
       getByConsultant: (consultantId) =>
         `/api/v2.5/appointment/consultant/${consultantId}`,
@@ -146,6 +148,30 @@ const config = {
       vnpayCallback: "/api/payment/vnpay-callback",
       vnpayIpn: "/api/payment/vnpay-ipn",
       getTransaction: (id) => `/api/payment/transaction/${id}`,
+    },
+
+    // Feedback endpoints - add API prefix
+    feedback: {
+      getAll: "/api/v2.5/feedback/getall",
+      getById: (id) => `/api/v2.5/feedback/${id}`,
+      create: "/api/v2.5/feedback/create",
+      update: (id) => `/api/v2.5/feedback/update/${id}`,
+      delete: (id) => `/api/v2.5/feedback/delete/${id}`,
+      getCustomerFeedbacks: "/api/v2.5/feedback/customer",
+      getConsultantFeedbacks: "/api/v2.5/feedback/consultant",
+      getByAppointment: (appointmentId) =>
+        `/api/v2.5/feedback/appointment/${appointmentId}`,
+      canProvideFeedback: (appointmentId) =>
+        `/api/v2.5/feedback/can-provide/${appointmentId}`,
+      getConsultantPublicFeedbacks: (consultantId) =>
+        `/api/v2.5/feedback/consultant/${consultantId}/public`,
+    },
+
+    // Notification endpoints
+    notification: {
+      getForUser: (userId) => `/api/v2.5/notification/user/${userId}`,
+      markAsRead: (notificationId) =>
+        `/api/v2.5/notification/mark/${notificationId}`, // Assuming this endpoint exists
     },
   },
 
