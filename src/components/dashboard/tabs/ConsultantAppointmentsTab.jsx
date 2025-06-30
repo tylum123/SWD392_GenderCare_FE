@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import appointmentService from "../../../services/appointmentService";
 import userService from "../../../services/userService";
 import testResultService from "../../../services/testResultService";
+import feedbackService from "../../../services/feedbackService";
 import {
   X,
   Check,
@@ -13,6 +14,7 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Star,
 } from "lucide-react"; // Added pagination icons
 import { te } from "date-fns/locale";
 
@@ -39,6 +41,17 @@ function ConsultantAppointmentsTab({ role }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [statusToUpdate, setStatusToUpdate] = useState(null);
   const confirmationRef = useRef(null);
+
+  // New state variables after your other state declarations
+  const [showMeetingLinkModal, setShowMeetingLinkModal] = useState(false);
+  const [selectedAppointmentForLink, setSelectedAppointmentForLink] =
+    useState(null);
+  const [meetingLink, setMeetingLink] = useState("");
+  const [googleMeetLink, setGoogleMeetUrl] = useState("");
+  const [isUpdatingLink, setIsUpdatingLink] = useState(false);
+  const [linkUpdateError, setLinkUpdateError] = useState(null);
+  const [linkUpdateSuccess, setLinkUpdateSuccess] = useState(false);
+  const meetingLinkModalRef = useRef(null);
 
   // Ref for customer detail popup
   const customerDetailRef = useRef(null);
@@ -112,11 +125,45 @@ function ConsultantAppointmentsTab({ role }) {
             reason: appointment.notes || "Không có lý do",
             symptoms: appointment.notes || "Không có chi tiết",
             createdAt: appointment.createdAt,
+            googleMeetLink: appointment.googleMeetLink || "",
           };
         });
 
         setConsultantAppointments(transformedAppointments);
         console.log("Transformed appointments:", transformedAppointments);
+
+        // Check for feedback on completed appointments
+        const completedAppointments = transformedAppointments.filter(
+          (appointment) => appointment.status === "completed"
+        );
+
+        // Initialize feedback lookup object
+        const feedbackLookup = {};
+
+        // Check each completed appointment for feedback
+        await Promise.all(
+          completedAppointments.map(async (appointment) => {
+            try {
+              const feedbackResponse = await feedbackService.getByAppointment(
+                appointment.id
+              );
+
+              if (feedbackResponse && feedbackResponse.data) {
+                feedbackLookup[appointment.id] = feedbackResponse.data;
+                console.log(
+                  `Found feedback for appointment ${appointment.id}:`,
+                  feedbackResponse.data
+                );
+              }
+            } catch (error) {
+              console.log(
+                `No feedback found for appointment ${appointment.id}`
+              );
+            }
+          })
+        );
+
+        setAppointmentsWithFeedback(feedbackLookup);
       } catch (err) {
         console.error("Error fetching appointments:", err);
         setError("Không thể tải danh sách cuộc hẹn. Vui lòng thử lại sau.");
@@ -376,6 +423,20 @@ function ConsultantAppointmentsTab({ role }) {
     }
   };
 
+  // Function to handle viewing feedback
+  const handleViewFeedback = async (appointmentId) => {
+    setLoadingFeedback(true);
+    try {
+      const feedback = appointmentsWithFeedback[appointmentId];
+      setCurrentFeedback(feedback);
+      setShowFeedbackModal(true);
+    } catch (error) {
+      console.error("Error loading feedback details:", error);
+    } finally {
+      setLoadingFeedback(false);
+    }
+  };
+
   // Function to open update status confirmation
   const openStatusUpdateConfirmation = (appointment, newStatus) => {
     setSelectedAppointment(appointment);
@@ -406,14 +467,28 @@ function ConsultantAppointmentsTab({ role }) {
   // Add state to track open dropdown
   const [openDropdownId, setOpenDropdownId] = useState(null);
 
+  // Add this state to track dropdown positioning
+  const [dropdownPosition, setDropdownPosition] = useState({});
+
   // Toggle dropdown visibility
   const toggleDropdown = (appointmentId, event) => {
     // Stop event propagation to prevent document click handler from firing immediately
     if (event) {
       event.stopPropagation();
-    }
 
-    // Toggle the dropdown state
+      // Calculate if we should show dropdown above or below
+      if (openDropdownId !== appointmentId) {
+        const button = event.currentTarget;
+        const rect = button.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const shouldFlip = spaceBelow < 150; // If less than 150px below, flip to above
+
+        setDropdownPosition({
+          id: appointmentId,
+          flip: shouldFlip,
+        });
+      }
+    }
     setOpenDropdownId(openDropdownId === appointmentId ? null : appointmentId);
   };
 
@@ -498,6 +573,114 @@ function ConsultantAppointmentsTab({ role }) {
   useEffect(() => {
     setCurrentPage(1);
   }, [filter]);
+
+  // Add these state variable declarations with your other state variables (after line 41)
+  const [appointmentsWithFeedback, setAppointmentsWithFeedback] = useState({});
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [currentFeedback, setCurrentFeedback] = useState(null);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const feedbackModalRef = useRef(null);
+
+  // Add these functions before the return statement
+
+  // Function to open the meeting link modal
+  const handleOpenMeetingLinkModal = (appointment) => {
+    setSelectedAppointmentForLink(appointment);
+    setLinkUpdateError(null);
+    setLinkUpdateSuccess(false);
+    setShowMeetingLinkModal(true);
+  };
+
+  // Function to handle meeting link submission
+  const handleUpdateMeetingLink = async (e) => {
+    e.preventDefault();
+
+    if (!selectedAppointmentForLink) return;
+
+    // Basic URL validation for meetingLink
+    const urlPattern =
+      /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+    if (meetingLink && !urlPattern.test(meetingLink)) {
+      setLinkUpdateError("Vui lòng nhập đường dẫn hợp lệ (https://...)");
+      return;
+    }
+
+    // Basic URL validation for googleMeetLink
+    if (googleMeetLink && !urlPattern.test(googleMeetLink)) {
+      setLinkUpdateError(
+        "Vui lòng nhập đường dẫn Google Meet hợp lệ (https://...)"
+      );
+      return;
+    }
+
+    setIsUpdatingLink(true);
+    setLinkUpdateError(null);
+
+    try {
+      await appointmentService.updateMeetingLink(
+        selectedAppointmentForLink.id,
+        {
+          meetingLink: meetingLink,
+          googleMeetLink: googleMeetLink, // Add Google Meet URL to payload
+        }
+      );
+
+      // Update local state
+      const updatedAppointments = consultantAppointments.map((appointment) => {
+        if (appointment.id === selectedAppointmentForLink.id) {
+          return {
+            ...appointment,
+            meetingLink: meetingLink,
+            googleMeetLink: googleMeetLink, // Update Google Meet URL in local state
+          };
+        }
+        return appointment;
+      });
+
+      setConsultantAppointments(updatedAppointments);
+      setLinkUpdateSuccess(true);
+
+      // Close modal after success
+      setTimeout(() => {
+        setShowMeetingLinkModal(false);
+        setSelectedAppointmentForLink(null);
+        setMeetingLink("");
+        setGoogleMeetUrl(""); // Reset Google Meet URL
+        setLinkUpdateSuccess(false);
+
+        // Show success notification
+        setSuccessMessage("Liên kết cuộc họp đã được cập nhật thành công!");
+        setShowSuccessNotification(true);
+      }, 1500);
+    } catch (error) {
+      console.error("Error updating meeting link:", error);
+      setLinkUpdateError(
+        "Không thể cập nhật liên kết cuộc họp. Vui lòng thử lại sau."
+      );
+    } finally {
+      setIsUpdatingLink(false);
+    }
+  };
+
+  // Close modal on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        meetingLinkModalRef.current &&
+        !meetingLinkModalRef.current.contains(event.target)
+      ) {
+        setShowMeetingLinkModal(false);
+      }
+    }
+
+    if (showMeetingLinkModal) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMeetingLinkModal]);
 
   return (
     <div>
@@ -734,6 +917,44 @@ function ConsultantAppointmentsTab({ role }) {
                           Chi tiết
                         </button>
 
+                        {/* Add feedback button for completed appointments */}
+                        {appointment.status === "completed" &&
+                          appointmentsWithFeedback[appointment.id] && (
+                            <button
+                              className="inline-flex items-center px-3.5 py-1.5 rounded-md text-amber-600 hover:text-amber-900 hover:bg-amber-50 border border-transparent hover:border-amber-100 transition-all duration-200"
+                              onClick={() => handleViewFeedback(appointment.id)}
+                            >
+                              <Star className="mr-1 h-4 w-4" />
+                              Xem đánh giá
+                            </button>
+                          )}
+
+                        {/* Add this new button for scheduled appointments */}
+                        {appointment.status === "scheduled" && (
+                          <button
+                            className="mt-2 inline-flex items-center px-3.5 py-1.5 rounded-md text-blue-600 hover:text-blue-900 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all duration-200"
+                            onClick={() =>
+                              handleOpenMeetingLinkModal(appointment)
+                            }
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 mr-1.5"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {appointment.googleMeetLink
+                              ? "Xem liên kết họp"
+                              : "Chưa có liên kết"}
+                          </button>
+                        )}
+
                         {/* Status update dropdown - only show for scheduled appointments */}
                         {appointment.status === "scheduled" && (
                           <div className="relative w-50%">
@@ -754,14 +975,16 @@ function ConsultantAppointmentsTab({ role }) {
                             {openDropdownId === appointment.id && (
                               <div
                                 ref={dropdownRef}
-                                className="origin-top-right absolute right-0 mt-1 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10"
+                                className={`absolute ${
+                                  dropdownPosition.id === appointment.id &&
+                                  dropdownPosition.flip
+                                    ? "bottom-full mb-1" // Position above button
+                                    : "top-full mt-1" // Position below button
+                                } right-0 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-40`}
                                 role="menu"
                                 aria-orientation="vertical"
                               >
-                                <div
-                                  className="py-1 divide-y divide-gray-100"
-                                  role="none"
-                                >
+                                <div className="py-1 divide-y divide-gray-100">
                                   <button
                                     className="w-full text-left flex items-center px-4 py-2 text-sm text-green-600 hover:bg-green-50 hover:text-green-700 transition-colors"
                                     onClick={() => {
@@ -886,7 +1109,7 @@ function ConsultantAppointmentsTab({ role }) {
                         onClick={() => paginate(index + 1)}
                         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
                           currentPage === index + 1
-                            ? "bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                            ? "bg-indigo-600 text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                             : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0"
                         }`}
                       >
@@ -1216,6 +1439,292 @@ function ConsultantAppointmentsTab({ role }) {
                   "Xác nhận hủy"
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Feedback Modal */}
+      {showFeedbackModal && currentFeedback && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div
+            ref={feedbackModalRef}
+            className="bg-white rounded-lg border border-gray-300 shadow-2xl max-w-lg w-full"
+          >
+            <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">
+                Đánh giá từ khách hàng
+              </h3>
+              <button
+                onClick={() => setShowFeedbackModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {loadingFeedback ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div>
+                  <p className="text-gray-500">Đang tải đánh giá...</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Rating */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      Đánh giá
+                    </h4>
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-5 w-5 ${
+                            star <= currentFeedback.rating
+                              ? "text-yellow-400 fill-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                      <span className="ml-2 text-sm text-gray-700">
+                        {currentFeedback.rating}/5
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Comment */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      Nhận xét
+                    </h4>
+                    <div className="bg-gray-50 p-4 rounded-md text-gray-700">
+                      {currentFeedback.comment || "Không có nhận xét"}
+                    </div>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      Thời gian đánh giá
+                    </h4>
+                    <p className="text-gray-700">
+                      {new Date(currentFeedback.createdAt).toLocaleString(
+                        "vi-VN",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+              <button
+                onClick={() => setShowFeedbackModal(false)}
+                className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Meeting Link Modal */}
+      {showMeetingLinkModal && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div
+            ref={meetingLinkModalRef}
+            className="bg-white rounded-lg border border-gray-300 shadow-2xl max-w-lg w-full"
+          >
+            <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">
+                Liên kết cuộc họp Google Meet
+              </h3>
+              <button
+                onClick={() => setShowMeetingLinkModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {linkUpdateSuccess ? (
+                <div className="rounded-md bg-green-50 p-4 mb-4 flex items-center justify-center">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <CheckCircle
+                        className="h-6 w-6 text-green-400"
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-base font-medium text-green-800">
+                        Liên kết cuộc họp đã được sao chép vào clipboard!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div>
+                    <div className="mb-4">
+                      <label
+                        htmlFor="appointmentInfo"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Thông tin cuộc hẹn
+                      </label>
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <p className="text-sm text-gray-800">
+                          <span className="font-medium">Khách hàng:</span>{" "}
+                          {selectedAppointmentForLink?.customerName}
+                        </p>
+                        <p className="text-sm text-gray-800">
+                          <span className="font-medium">Ngày hẹn:</span>{" "}
+                          {selectedAppointmentForLink?.date}
+                        </p>
+                        <p className="text-sm text-gray-800">
+                          <span className="font-medium">Giờ:</span>{" "}
+                          {selectedAppointmentForLink?.time}
+                        </p>
+                        <p className="text-sm text-gray-800">
+                          <span className="font-medium">Loại hẹn:</span>{" "}
+                          {selectedAppointmentForLink?.type}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Google Meet Link Display - Read-only */}
+                    <div className="mt-4">
+                      <label
+                        htmlFor="googleMeetLink"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Liên kết Google Meet (tự động tạo)
+                      </label>
+                      <div className="flex">
+                        <input
+                          type="text"
+                          id="googleMeetLink"
+                          name="googleMeetLink"
+                          className="shadow-sm bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md px-3 py-2"
+                          value={
+                            selectedAppointmentForLink?.googleMeetLink ||
+                            "Liên kết chưa được tạo"
+                          }
+                          readOnly
+                        />
+                        <button
+                          type="button"
+                          className="ml-2 inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+                          onClick={() => {
+                            if (selectedAppointmentForLink?.googleMeetLink) {
+                              navigator.clipboard.writeText(
+                                selectedAppointmentForLink.googleMeetLink
+                              );
+                              setLinkUpdateSuccess(true);
+                              setTimeout(
+                                () => setLinkUpdateSuccess(false),
+                                2000
+                              );
+                            }
+                          }}
+                          disabled={!selectedAppointmentForLink?.googleMeetLink}
+                        >
+                          <svg
+                            className="h-5 w-5 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
+                          </svg>
+                          Sao chép
+                        </button>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Liên kết Google Meet được tạo tự động cho cuộc hẹn này.
+                      </p>
+                    </div>
+                  </div>
+
+                  {linkUpdateError && (
+                    <div className="rounded-md bg-red-50 p-3 border border-red-200">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg
+                            className="h-5 w-5 text-red-400"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          />
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clipRule="evenodd"
+                          />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-red-800">
+                            {linkUpdateError}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-3 mt-5 border-t border-gray-200 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowMeetingLinkModal(false)}
+                      className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Đóng
+                    </button>
+                    {selectedAppointmentForLink?.googleMeetLink && (
+                      <button
+                        type="button"
+                        className="inline-flex justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        onClick={() =>
+                          window.open(
+                            selectedAppointmentForLink.googleMeetLink,
+                            "_blank"
+                          )
+                        }
+                      >
+                        <svg
+                          className="h-5 w-5 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                        Tham gia cuộc họp
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

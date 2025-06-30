@@ -72,7 +72,7 @@ const blogService = {
   update: async (id, blogData) => {
     try {
       console.log(`Calling update API for post ID ${id}:`, blogData);
-      
+
       // Đảm bảo id là hợp lệ
       if (!id) {
         throw new Error("Missing post ID for update");
@@ -83,7 +83,7 @@ const blogService = {
         title: blogData.title,
         content: blogData.content,
         imageUrl: blogData.imageUrl,
-        category: Number(blogData.category)
+        category: Number(blogData.category),
       };
 
       const response = await axios.put(
@@ -93,7 +93,7 @@ const blogService = {
           headers: getAuthHeader(),
         }
       );
-      
+
       console.log("Update response:", response.data);
       return response.data;
     } catch (error) {
@@ -105,16 +105,23 @@ const blogService = {
   // API mới cho manager phê duyệt bài viết
   approve: async (id, statusValue) => {
     try {
+      // API yêu cầu gửi status qua query parameter, không phải body
       const response = await axios.put(
         `${API_URL}/api/v2.5/post/approve/${id}`,
-        { status: statusValue },
+        null, // Body rỗng
         {
           headers: getAuthHeader(),
+          params: {
+            status: statusValue,
+          },
         }
       );
       return response.data;
     } catch (error) {
-      console.error(`Error approving/rejecting blog post with id ${id}:`, error);
+      console.error(
+        `Error approving/rejecting blog post with id ${id}:`,
+        error
+      );
       throw error;
     }
   },

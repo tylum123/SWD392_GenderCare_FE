@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import tokenHelper from "../../utils/tokenHelper";
 import blogService from "../../services/blogService";
+import { BLOG_CATEGORIES } from "../../constants/blog";
 
 const POST_STATUS = {
   DRAFT: 0, // Bản nháp
@@ -19,14 +20,8 @@ const BlogForm = ({ initialData, onSubmitSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Danh mục bài viết
-  const categories = [
-    { id: 0, name: "Sức khỏe sinh sản" },
-    { id: 1, name: "Sức khỏe tình dục" },
-    { id: 2, name: "Sức khỏe tâm thần" },
-    { id: 3, name: "Giáo dục giới tính" },
-    { id: 5, name: "Sức khỏe tinh thần" },
-  ];
+  // Danh mục bài viết - Lấy từ file constants
+  const categories = BLOG_CATEGORIES;
 
   // Sửa lại hàm handleSubmit
   const handleSubmit = async (e) => {
